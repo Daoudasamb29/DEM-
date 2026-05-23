@@ -19,131 +19,135 @@ export default function HomeView({
   savedBookingsCount,
   availableTrips
  }: HomeViewProps) {
-  const [cardTop, setCardTop] = useState(typeof window !== 'undefined' ? window.innerHeight * 0.45 : 300);
-  const [textOpacity, setTextOpacity] = useState(1);
+  
+  // Track scroll position to power dynamic premium layout transitions
+  const [scrollTop, setScrollTop] = useState(0);
+  const [windowHeight, setWindowHeight] = useState(typeof window !== 'undefined' ? window.innerHeight : 800);
 
   useEffect(() => {
-    const handleScroll = () => {
-      const scroll = window.scrollY
-      const windowHeight = window.innerHeight
-      const startTop = windowHeight * 0.45
-      const endTop = 80
-      if (scroll <= 150) {
-        const newTop = startTop - ((startTop - endTop) * scroll / 150)
-        setCardTop(newTop)
-      } else {
-        setCardTop(endTop)
-      }
+    const handleResize = () => {
+      setWindowHeight(window.innerHeight);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-      const opacity = Math.max(0, 1 - scroll / 80)
-      setTextOpacity(opacity)
-    }
-    window.addEventListener('scroll', handleScroll)
-    // Run immediately
-    handleScroll()
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
-  
-  // Standard routes available
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    setScrollTop(e.currentTarget.scrollTop);
+  };
+
+  // Trajet prices with requested pricing updates
   const defaultTrips = [
-    { from: 'Dakar', to: 'Tivaouane', price: 2000 },
-    { from: 'Tivaouane', to: 'Dakar', price: 2000 },
-    { from: 'Dakar', to: 'Thiès', price: 1500 },
-    { from: 'Thiès', to: 'Dakar', price: 1500 },
-    { from: 'Dakar', to: 'Touba', price: 2500 },
-    { from: 'Touba', to: 'Dakar', price: 2500 },
+    { from: 'Dakar', to: 'Tivaouane', price: 5000 },
+    { from: 'Tivaouane', to: 'Dakar', price: 5000 },
+    { from: 'Dakar', to: 'Thiès', price: 3500 },
+    { from: 'Thiès', to: 'Dakar', price: 3500 },
+    { from: 'Dakar', to: 'Touba', price: 6000 },
+    { from: 'Touba', to: 'Dakar', price: 6000 },
   ];
 
   const standardTrips = availableTrips && availableTrips.length > 0 ? availableTrips : defaultTrips;
 
+  // Compute dynamic dimensions based on screen size and scroll state
+  const maxHeroHeight = windowHeight * 0.48; // Hero covers 48% of the viewport height initially
+  const minHeroHeight = 110;                 // Sticky collapsed header size
+  const scrollThreshold = maxHeroHeight - minHeroHeight;
+
+  // Active interpolation values restricted between correct bounds
+  const currentHeroHeight = Math.max(minHeroHeight, maxHeroHeight - scrollTop);
+  const progress = Math.min(1, Math.max(0, scrollTop / (scrollThreshold || 1)));
+
+  // Premium transition styles and shifts
+  const parallaxY = scrollTop * 0.35;
+  const heroScale = 1 + (progress * 0.06);
+  const welcomeTextOpacity = Math.max(0, 1 - progress * 1.8); // Dims greeting text early
+  const logoScale = 1 - (progress * 0.12); // Smoothly downscale logo area by 12%
+
   return (
-    <div id="home-view" className="flex flex-col min-h-screen bg-[#EEF2FF]">
-      {/* Background container or directly the fixed hero image */}
-      <img 
-        src={senegalTravelBanner} 
-        alt="Voyage au Sénégal avec Niou Dem" 
-        referrerPolicy="no-referrer"
-        className="opacity-60 select-none pointer-events-none"
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '50vh',
-          zIndex: 0,
-          objectFit: 'cover'
-        }}
-      />
-
-      {/* Superposed Absolute/Fixed Content in top-left (stays visible) */}
+    <div 
+      id="home-view" 
+      onScroll={handleScroll}
+      className="relative flex flex-col min-h-screen bg-[#EEF2FF] overflow-y-auto"
+    >
+      
+      {/* PREMIUM DYNAMIC COLLAPSIBLE HERO SECTION */}
       <div 
-        className="flex flex-col gap-4 items-start select-none pointer-events-none p-1"
-        style={{
-          position: 'fixed',
-          top: 20,
-          left: 16,
-          zIndex: 10
-        }}
+        style={{ height: `${currentHeroHeight}px` }}
+        className="fixed top-0 left-0 right-0 w-full overflow-hidden select-none pointer-events-none z-10 transition-all duration-75 ease-out"
       >
-        {/* Logo box */}
-        <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md py-1.5 px-3.5 rounded-full border border-white/10 shadow-sm pointer-events-auto">
-          <div className="w-8 h-8 rounded-full overflow-hidden border border-[#F4841C]/80 bg-white flex items-center justify-center shadow-inner">
-            <img 
-              src={logo} 
-              alt="DEM Logo Icon" 
-              className="w-full h-full object-contain p-0.5"
-              referrerPolicy="no-referrer"
-            />
-          </div>
-          <div className="flex flex-col">
-            <span className="font-sans font-black text-[#F4841C] text-sm tracking-widest leading-none">DEM</span>
-            <span className="text-[8px] text-indigo-200 mt-0.5 font-bold leading-none tracking-tight">niou_dem</span>
-          </div>
-        </div>
+        {/* Dynamic Zoom & Parallax Image */}
+        <img 
+          src={senegalTravelBanner} 
+          alt="Voyage au Sénégal avec Niou Dem" 
+          referrerPolicy="no-referrer"
+          style={{ transform: `translateY(${parallaxY}px) scale(${heroScale})` }}
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-100 ease-out"
+        />
 
-        {/* Bonjour / Où allez-vous text */}
-        <div className="flex flex-col mt-2 drop-shadow-lg" style={{ opacity: textOpacity, transition: 'opacity 0.1s ease-out' }}>
-          <span className="text-indigo-200 text-xs font-semibold tracking-wider uppercase">Bonjour 👋</span>
-          <h2 className="text-white text-3xl font-black mt-1 leading-none tracking-tight">Où allez-vous ?</h2>
+        {/* Dynamic dark overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/20 z-0 pointer-events-none"></div>
+
+        {/* Animated Brand Overlay UI */}
+        <div 
+          style={{ transform: `translateY(${Math.max(-10, -scrollTop * 0.1)}px)` }}
+          className="absolute top-6 left-6 z-10 flex flex-col gap-3.5 pointer-events-none transition-transform duration-75 ease-out"
+        >
+          {/* Brand Logo Container */}
+          <div 
+            style={{ transform: `scale(${logoScale})` }}
+            className="origin-top-left flex items-center gap-2 bg-black/40 backdrop-blur-md py-1.5 px-3.5 rounded-full border border-white/10 shadow-sm pointer-events-auto transition-transform duration-75 ease-out"
+          >
+            <div className="w-8 h-8 rounded-full overflow-hidden border border-[#F4841C]/80 bg-white flex items-center justify-center shadow-inner">
+              <img 
+                src={logo} 
+                alt="DEM Logo Icon" 
+                className="w-full h-full object-contain p-0.5"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-sans font-black text-[#F4841C] text-sm tracking-widest leading-none">DEM</span>
+              <span className="text-[8px] text-indigo-200 mt-0.5 font-bold leading-none tracking-tight">niou_dem</span>
+            </div>
+          </div>
+
+          {/* Slogan & Welcome Greeting Label with dynamic opacity fade */}
+          <div 
+            style={{ opacity: welcomeTextOpacity }}
+            className="flex flex-col mt-2.5 drop-shadow-md select-none text-left origin-left transition-opacity duration-75 ease-out"
+          >
+            <span className="text-indigo-200 text-xs font-semibold tracking-wider uppercase">Bonjour 👋</span>
+            <h2 className="text-white text-3xl font-black mt-1 leading-none tracking-tight">Où allez-vous ?</h2>
+          </div>
         </div>
       </div>
 
-      {/* RENDERED CARDS BLOCK — Rounded top corners white container */}
+      {/* spacer to push following content naturally down */}
       <div 
-        className="pb-20 px-4"
-        style={{
-          marginTop: `${cardTop}px`,
-          transition: 'margin-top 0.1s ease-out',
-          borderRadius: '20px 20px 0 0',
-          boxShadow: '0 -4px 20px rgba(0,0,0,0.18)',
-          position: 'relative',
-          zIndex: 5,
-          backgroundColor: 'white',
-          minHeight: '100vh'
-        }}
+        style={{ height: `${maxHeroHeight}px` }}
+        className="w-full shrink-0 pointer-events-none"
+      />
+
+      {/* RENDERED CARDS BLOCK — Flows naturally and overlaps slightly (-mt-5) */}
+      <div 
+        className="-mt-5 bg-white pb-24 px-4 rounded-t-3xl relative z-20 shadow-[0_-12px_30px_rgba(13,27,75,0.09)] flex-1 flex flex-col pt-3"
       >
         {/* Drag Handle Bar Accent */}
-        <div style={{
-          width: 36,
-          height: 4,
-          borderRadius: 2,
-          backgroundColor: '#c8cfe8',
-          margin: '8px auto 12px'
-        }} />
+        <div className="w-9 h-1 bg-[#c8cfe8] rounded-full mx-auto mb-3.5" />
         
-        {/* Title */}
+        {/* Section Title */}
         <div className="flex items-center justify-between mb-4 mt-1">
           <h3 className="text-[#0D1B4B] text-base font-bold tracking-tight">Trajets disponibles</h3>
           <span className="text-xs text-indigo-500 font-medium">Glisser pour voir</span>
         </div>
 
-        {/* CAROUSEL - Horizontal Swiper Card */}
+        {/* CAROUSEL - Horizontal Swiper Card with horizontal fluid scrolling */}
         <div className="flex gap-4.5 overflow-x-auto pb-4 pt-1 snap-x scroll-smooth no-scrollbar select-none">
           {standardTrips.map((trip, idx) => (
             <div
               key={idx}
               onClick={() => onSelectStandardTrip(trip.from, trip.to, trip.price)}
-              className="flex-shrink-0 w-[170px] bg-white rounded-2xl border border-indigo-100/80 p-4 shadow-sm hover:shadow-md hover:border-orange-200 transition-all duration-300 cursor-pointer snap-start group relative overflow-hidden"
+              className="flex-shrink-0 w-[170px] bg-white rounded-2xl border border-indigo-100/80 p-4 shadow-sm hover:shadow-md hover:border-orange-200 transition-all duration-300 cursor-pointer snap-start group relative overflow-hidden flex flex-col justify-between"
             >
               <div className="absolute -right-6 -top-6 w-16 h-16 bg-orange-50/50 rounded-full scale-0 group-hover:scale-100 transition-transform duration-300 z-0"></div>
               
@@ -183,7 +187,7 @@ export default function HomeView({
           
           <div
             onClick={onSelectAibdTrip}
-            className="bg-[#1B3080] rounded-2xl p-5 shadow-md border border-indigo-900/40 relative overflow-hidden hover:opacity-95 transition-all duration-200 cursor-pointer scale-100 active:scale-98 group"
+            className="bg-[#1B3080] rounded-2xl p-5 shadow-sm border border-indigo-900/40 relative overflow-hidden hover:opacity-95 transition-all duration-200 cursor-pointer scale-100 active:scale-98 group animate-fadeIn"
           >
             {/* Artistic element planes in background layer */}
             <div className="absolute -right-6 -bottom-6 text-white/5 pointer-events-none stroke-current">
@@ -206,7 +210,7 @@ export default function HomeView({
                     Shuttle direct · Climatisation & grands bagages inclus
                   </p>
                   
-                  <div className="flex gap-4 mt-3">
+                  <div className="flex gap-4 mt-3 col-span-2">
                     <div className="flex items-center gap-1 bg-[#0D1B4B]/30 px-2.5 py-1 rounded-md text-[10px] text-indigo-100 border border-indigo-700/30">
                       <span>✓ Bagages inclus (23kg)</span>
                     </div>

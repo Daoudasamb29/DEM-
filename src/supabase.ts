@@ -124,12 +124,12 @@ export async function chargerTrajets(): Promise<any[]> {
   if (!client) {
     // Return standard fallback trips so the app never crashes when offline or setup is incomplete
     return [
-      { id: '1', ville_depart: 'Dakar', ville_arrivee: 'Tivaouane', prix: 2000, heure: '07h00', actif: true },
-      { id: '2', ville_depart: 'Tivaouane', ville_arrivee: 'Dakar', prix: 2000, heure: '10h30', actif: true },
-      { id: '3', ville_depart: 'Dakar', ville_arrivee: 'Thiès', prix: 1500, heure: '07h00', actif: true },
-      { id: '4', ville_depart: 'Thiès', ville_arrivee: 'Dakar', prix: 1500, heure: '14h00', actif: true },
-      { id: '5', ville_depart: 'Dakar', ville_arrivee: 'Touba', prix: 2500, heure: '10h30', actif: true },
-      { id: '6', ville_depart: 'Touba', ville_arrivee: 'Dakar', prix: 2500, heure: '14h00', actif: true },
+      { id: '1', ville_depart: 'Dakar', ville_arrivee: 'Tivaouane', prix: 5000, heure: '07h00', actif: true },
+      { id: '2', ville_depart: 'Tivaouane', ville_arrivee: 'Dakar', prix: 5000, heure: '10h30', actif: true },
+      { id: '3', ville_depart: 'Dakar', ville_arrivee: 'Thiès', prix: 3500, heure: '07h00', actif: true },
+      { id: '4', ville_depart: 'Thiès', ville_arrivee: 'Dakar', prix: 3500, heure: '14h00', actif: true },
+      { id: '5', ville_depart: 'Dakar', ville_arrivee: 'Touba', prix: 6000, heure: '10h30', actif: true },
+      { id: '6', ville_depart: 'Touba', ville_arrivee: 'Dakar', prix: 6000, heure: '14h00', actif: true },
     ];
   }
   
@@ -409,6 +409,19 @@ export async function genererImage(
 }
 
 /**
+ * Helper to get modern trip pricing depending on locations
+ */
+function getRefPrice(row: { trajet_type: string; ville_depart: string; ville_arrivee: string }): number {
+  if (row.trajet_type === 'aibd') return 20000;
+  const f = (row.ville_depart || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+  const t = (row.ville_arrivee || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+  if (f === 'touba' || t === 'touba') return 6000;
+  if (f === 'tivaouane' || t === 'tivaouane') return 5000;
+  if (f === 'thies' || t === 'thies') return 3500;
+  return 3500; // standard fallback
+}
+
+/**
  * 6. mesTickets(telephone)
  * Charge depuis reservations avec un auto join/lookups sur voyageurs et tickets,
  * filtré par le numéro de téléphone, trié par date de réservation décroissante.
@@ -483,7 +496,7 @@ export async function mesTickets(telephoneRaw: string): Promise<BookingData[]> {
         tripType: row.trajet_type === 'aibd' ? 'aibd' : 'standard',
         from: row.ville_depart,
         to: row.ville_arrivee,
-        price: row.trajet_type === 'aibd' ? 6000 : 2000,
+        price: getRefPrice(row),
         date: row.date_voyage,
         time: row.heure_depart,
         fullName: v.nom || 'Passager',
@@ -571,7 +584,7 @@ export async function fetchSupabaseBookings(): Promise<BookingData[]> {
         tripType: row.trajet_type === 'aibd' ? 'aibd' : 'standard',
         from: row.ville_depart,
         to: row.ville_arrivee,
-        price: row.trajet_type === 'aibd' ? 6000 : 2000,
+        price: getRefPrice(row),
         date: row.date_voyage,
         time: row.heure_depart,
         fullName: v.nom || 'Passager',

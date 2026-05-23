@@ -30,12 +30,12 @@ export default function App() {
   
   // Custom standard available routes list
   const defaultTrips = [
-    { from: 'Dakar', to: 'Tivaouane', price: 2000 },
-    { from: 'Tivaouane', to: 'Dakar', price: 2000 },
-    { from: 'Dakar', to: 'Thiès', price: 1500 },
-    { from: 'Thiès', to: 'Dakar', price: 1500 },
-    { from: 'Dakar', to: 'Touba', price: 2500 },
-    { from: 'Touba', to: 'Dakar', price: 2500 },
+    { from: 'Dakar', to: 'Tivaouane', price: 5000 },
+    { from: 'Tivaouane', to: 'Dakar', price: 5000 },
+    { from: 'Dakar', to: 'Thiès', price: 3500 },
+    { from: 'Thiès', to: 'Dakar', price: 3500 },
+    { from: 'Dakar', to: 'Touba', price: 6000 },
+    { from: 'Touba', to: 'Dakar', price: 6000 },
   ];
 
   // Dynamic trips from Supabase, initialized to the exact 6 requested routes
@@ -79,7 +79,7 @@ export default function App() {
             return {
               from: dbTrip.ville_depart,
               to: dbTrip.ville_arrivee,
-              price: Number(dbTrip.prix),
+              price: def.price, // Use corrected client-defined default price for consistent pricing
               id: dbTrip.id
             };
           }

@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Calendar, User, Phone, MapPin, Briefcase, Snowflake, Check, HelpCircle } from 'lucide-react';
-import { chargerHoraires } from '../supabase';
+import React, { useState } from 'react';
+import { ArrowLeft, Calendar, Clock, User, Phone, MapPin, Briefcase, Snowflake, Check, HelpCircle } from 'lucide-react';
 
 interface AibdFormViewProps {
   onBack: () => void;
@@ -45,33 +44,7 @@ export default function AibdFormView({
     departureAddress?: string;
   }>({});
 
-  const [airportShuttleTimes, setAirportShuttleTimes] = useState<string[]>([]);
-  const [loadingTimes, setLoadingTimes] = useState(false);
-
-  useEffect(() => {
-    if (!date) {
-      setAirportShuttleTimes([]);
-      return;
-    }
-    setLoadingTimes(true);
-    chargerHoraires('Dakar', 'AIBD')
-      .then((hours) => {
-        setAirportShuttleTimes(hours);
-        if (hours && hours.length > 0) {
-          setTime(hours[0]);
-        }
-      })
-      .catch((err) => {
-        console.error("Erreur de chargement des navettes:", err);
-        setAirportShuttleTimes(['08h30', '12h00', '16h30', '20h00']);
-        setTime('08h30');
-      })
-      .finally(() => {
-        setLoadingTimes(false);
-      });
-  }, [date]);
-
-  const fixedPrice = 6000; // Special AIBD shuttle flat rate in FCFA
+  const fixedPrice = 20000; // Special AIBD shuttle flat rate in FCFA
 
   const handleConfirmAibd = (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,7 +57,7 @@ export default function AibdFormView({
 
     // Validate departure time
     if (date && !time) {
-      newErrors.time = 'Veuillez choisir un horaire de navette.';
+      newErrors.time = 'L\'heure de départ souhaitée est requise.';
     }
 
     // Validate passenger name
@@ -149,7 +122,7 @@ export default function AibdFormView({
           </button>
           <div>
             <h2 className="font-bold text-base leading-snug">AIBD · Aéroport</h2>
-            <p className="text-[10px] text-indigo-250 font-medium">Navette Aéroport Spéciale · 6 000 FCFA</p>
+            <p className="text-[10px] text-indigo-250 font-medium">Navette Aéroport Spéciale · 20 000 FCFA</p>
           </div>
         </div>
         
@@ -167,6 +140,59 @@ export default function AibdFormView({
             <span>1. Date du voyage <span className="text-xs text-red-500 font-bold">*</span></span>
             <span className="text-[9px] text-[#F4841C] font-bold font-mono">ÉTAPE BLOCKANTE</span>
           </label>
+
+          {/* Quick Shortcuts */}
+          <div className="flex gap-2 mb-3">
+            <button
+              type="button"
+              onClick={() => {
+                const todayVal = new Date().toISOString().split('T')[0];
+                setDate(todayVal);
+                if (errors.date) setErrors(prev => ({ ...prev, date: undefined }));
+              }}
+              className={`flex-1 py-1.5 px-2 text-center text-[11px] font-bold rounded-xl transition-all border ${
+                date === new Date().toISOString().split('T')[0]
+                  ? 'bg-orange-50 border-[#F4841C] text-[#F4841C]'
+                  : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              Aujourd'hui
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const tom = new Date();
+                tom.setDate(tom.getDate() + 1);
+                const tomVal = tom.toISOString().split('T')[0];
+                setDate(tomVal);
+                if (errors.date) setErrors(prev => ({ ...prev, date: undefined }));
+              }}
+              className={`flex-1 py-1.5 px-2 text-center text-[11px] font-bold rounded-xl transition-all border ${
+                date === new Date(Date.now() + 86400000).toISOString().split('T')[0]
+                  ? 'bg-orange-50 border-[#F4841C] text-[#F4841C]'
+                  : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              Demain
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const dayAfter = new Date();
+                dayAfter.setDate(dayAfter.getDate() + 2);
+                const dayAfterVal = dayAfter.toISOString().split('T')[0];
+                setDate(dayAfterVal);
+                if (errors.date) setErrors(prev => ({ ...prev, date: undefined }));
+              }}
+              className={`flex-1 py-1.5 px-2 text-center text-[11px] font-bold rounded-xl transition-all border ${
+                date === new Date(Date.now() + 172800000).toISOString().split('T')[0]
+                  ? 'bg-orange-50 border-[#F4841C] text-[#F4841C]'
+                  : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              Après-demain
+            </button>
+          </div>
           
           <div 
             className={`flex items-center gap-3 bg-white rounded-xl px-3.5 py-3 transition-colors relative ${
@@ -185,10 +211,20 @@ export default function AibdFormView({
               className="w-full bg-transparent focus:outline-none text-slate-800 text-sm font-semibold cursor-pointer"
             />
           </div>
+
+          {/* Elegant format display confirmation */}
+          {date && (
+            <div className="mt-2.5 bg-indigo-50/50 rounded-xl px-3 py-1.5 border border-indigo-100/50 flex items-center justify-between text-xs animate-fadeIn">
+              <span className="font-semibold text-indigo-800">Date sélectionnée :</span>
+              <span className="font-bold text-[#F4841C] tracking-wide bg-white px-2.5 py-1 rounded-lg border border-indigo-100 font-mono">
+                {date.split('-').reverse().join('/')}
+              </span>
+            </div>
+          )}
           
-          <p className="text-[10px] text-[#F4841C] font-semibold mt-1.5 leading-snug flex items-center gap-1">
+          <p className="text-[10px] text-[#F4841C] font-semibold mt-2.5 leading-snug flex items-center gap-1">
             <HelpCircle className="w-3 h-3 flex-shrink-0" />
-            <span>Sélectionnez une date pour voir les horaires des navettes.</span>
+            <span>Sélectionnez la date de votre vol ou voyage vers l'aéroport.</span>
           </p>
           
           {errors.date && (
@@ -196,41 +232,40 @@ export default function AibdFormView({
           )}
         </div>
 
-        {/* FIELD 2: SHUTTLE TIMES (ONLY SHOWS AFTER DATE SELECTION) */}
+        {/* FIELD 2: CUSTOM DEPARTURE TIME INPUT */}
         {date ? (
-          <div id="field-time" className="bg-[#0D1B4B] rounded-2xl p-4.5 shadow-md border border-indigo-950/65 animate-fadeIn">
-            <label className="block text-indigo-200 font-bold text-xs uppercase tracking-wider mb-3 flex justify-between items-center">
-              <span>2. Horaires des navettes · AIBD <span className="text-red-400 font-bold">*</span></span>
-              {loadingTimes && (
-                <span className="text-[10px] text-orange-400 animate-pulse font-normal">Chargement...</span>
-              )}
+          <div id="field-time" className="bg-white rounded-2xl border border-indigo-100 p-4 shadow-sm animate-fadeIn">
+            <label className="block text-slate-700 font-bold text-xs uppercase tracking-wider mb-2 flex justify-between items-center">
+              <span>2. Heure de départ souhaitée <span className="text-red-500 font-bold">*</span></span>
+              <span className="text-[9px] text-[#F4841C] font-bold font-mono bg-orange-50 px-2 py-0.5 rounded border border-orange-200 uppercase">
+                HORAIRE LIBRE
+              </span>
             </label>
             
-            <div className="flex gap-2.5 flex-wrap">
-              {airportShuttleTimes.map((hour) => {
-                const isSelected = time === hour;
-                return (
-                  <button
-                    key={hour}
-                    type="button"
-                    onClick={() => {
-                      setTime(hour);
-                      if (errors.time) setErrors(prev => ({ ...prev, time: undefined }));
-                    }}
-                    className={`flex-1 min-w-[80px] text-center font-bold text-sm py-2 px-3.5 rounded-xl transition-all ${
-                      isSelected 
-                        ? 'bg-[#F4841C] text-white ring-2 ring-orange-300' 
-                        : 'bg-[#1B3080] text-indigo-200 border border-indigo-700/30 hover:bg-indigo-850'
-                    }`}
-                  >
-                    {hour}
-                  </button>
-                );
-              })}
+            <div 
+              className={`flex items-center gap-3 bg-slate-50 border rounded-xl px-3.5 py-3 transition-colors ${
+                errors.time ? 'border-red-500 bg-red-50/10' : 'border-slate-200 focus-within:border-[#F4841C] focus-within:bg-white'
+              }`}
+            >
+              <Clock className="w-5 h-5 text-[#F4841C]" />
+              <input 
+                type="time"
+                value={time}
+                onChange={(e) => {
+                  setTime(e.target.value);
+                  if (errors.time) setErrors(prev => ({ ...prev, time: undefined }));
+                }}
+                className="w-full bg-transparent focus:outline-none text-slate-800 text-sm font-semibold cursor-pointer"
+              />
             </div>
             
+            <p className="text-[10px] text-slate-500 font-semibold mt-2.5 leading-snug flex items-center gap-1">
+              <HelpCircle className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+              <span>Vous êtes libre de choisir votre horaire. Le chauffeur viendra à l'heure renseignée.</span>
+            </p>
+            
             {errors.time && (
-              <p className="text-xs text-red-400 font-bold mt-2">{errors.time}</p>
+              <p className="text-xs text-red-500 font-bold mt-1.5">{errors.time}</p>
             )}
           </div>
         ) : (
@@ -240,7 +275,7 @@ export default function AibdFormView({
               !
             </div>
             <span className="font-extrabold text-[#F4841C] mb-1">Information requise</span>
-            <span className="font-bold text-amber-800">Sélectionnez une date pour voir les trajets disponibles.</span>
+            <span className="font-bold text-amber-800">Sélectionnez une date d'abord pour définir votre heure de prise en charge.</span>
           </div>
         )}
 
