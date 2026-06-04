@@ -127,7 +127,21 @@ export default function StandardFormView({
   };
 
   // Get current date string for min constraint (travel cannot be in past)
-  const today = new Date().toISOString().split('T')[0];
+  // Get current date string for min constraint to avoid GMT/UTC mismatch on mobile (travel cannot be in past)
+  const getLocalDateString = (offsetDays = 0) => {
+    const d = new Date();
+    if (offsetDays !== 0) {
+      d.setDate(d.getDate() + offsetDays);
+    }
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const today = getLocalDateString(0);
+  const tomorrow = getLocalDateString(1);
+  const dayAfter = getLocalDateString(2);
 
   return (
     <div id="standard-form-view" className="flex flex-col min-h-screen bg-[#EEF2FF]">
@@ -161,12 +175,11 @@ export default function StandardFormView({
             <button
               type="button"
               onClick={() => {
-                const todayVal = new Date().toISOString().split('T')[0];
-                setDate(todayVal);
+                setDate(today);
                 if (errors.date) setErrors(prev => ({ ...prev, date: undefined }));
               }}
               className={`flex-1 py-1.5 px-2 text-center text-[11px] font-bold rounded-xl transition-all border ${
-                date === new Date().toISOString().split('T')[0]
+                date === today
                   ? 'bg-orange-50 border-[#F4841C] text-[#F4841C]'
                   : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
               }`}
@@ -176,14 +189,11 @@ export default function StandardFormView({
             <button
               type="button"
               onClick={() => {
-                const tom = new Date();
-                tom.setDate(tom.getDate() + 1);
-                const tomVal = tom.toISOString().split('T')[0];
-                setDate(tomVal);
+                setDate(tomorrow);
                 if (errors.date) setErrors(prev => ({ ...prev, date: undefined }));
               }}
               className={`flex-1 py-1.5 px-2 text-center text-[11px] font-bold rounded-xl transition-all border ${
-                date === new Date(Date.now() + 86400000).toISOString().split('T')[0]
+                date === tomorrow
                   ? 'bg-orange-50 border-[#F4841C] text-[#F4841C]'
                   : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
               }`}
@@ -193,14 +203,11 @@ export default function StandardFormView({
             <button
               type="button"
               onClick={() => {
-                const dayAfter = new Date();
-                dayAfter.setDate(dayAfter.getDate() + 2);
-                const dayAfterVal = dayAfter.toISOString().split('T')[0];
-                setDate(dayAfterVal);
+                setDate(dayAfter);
                 if (errors.date) setErrors(prev => ({ ...prev, date: undefined }));
               }}
               className={`flex-1 py-1.5 px-2 text-center text-[11px] font-bold rounded-xl transition-all border ${
-                date === new Date(Date.now() + 172800000).toISOString().split('T')[0]
+                date === dayAfter
                   ? 'bg-orange-50 border-[#F4841C] text-[#F4841C]'
                   : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
               }`}
@@ -210,11 +217,16 @@ export default function StandardFormView({
           </div>
           
           <div 
-            className={`flex items-center gap-3 bg-white rounded-xl px-3.5 py-3 transition-all relative ${
+            className={`flex items-center gap-3 bg-white rounded-xl px-3.5 py-3 transition-all relative overflow-hidden cursor-pointer ${
               errors.date ? 'border-2 border-red-500' : 'border-1.5 border-[#F4841C]'
             }`}
           >
-            <Calendar className="w-5 h-5 text-[#F4841C] flex-shrink-0" />
+            <Calendar className="w-5 h-5 text-[#F4841C] flex-shrink-0 z-0" />
+            <span className="text-slate-800 text-sm font-semibold z-0">
+              {date ? date.split('-').reverse().join('/') : "Sélectionner une date..."}
+            </span>
+            
+            {/* The actual native input overlaying the whole card with zero opacity to intercept native mobile touches/taps instantly */}
             <input 
               type="date"
               min={today}
@@ -224,7 +236,7 @@ export default function StandardFormView({
                 // Clear errors on change
                 if (errors.date) setErrors(prev => ({ ...prev, date: undefined }));
               }}
-              className="w-full bg-transparent focus:outline-none text-slate-800 text-sm font-semibold select-none cursor-pointer"
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
             />
           </div>
           

@@ -17,17 +17,28 @@
   </head>
   <body class="bg-[#EEF2FF] text-[#0D1B4B]">
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-    <!-- Service Worker Registration -->
+    <!-- Clean Service Worker and Cache to prevent Blank Screen conflicts without infinite reload loop -->
     <script>
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then((reg) => console.log('Service Worker enregistré !', reg.scope))
-            .catch((err) => console.log('Erreur Service Worker :', err));
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          for (let registration of registrations) {
+            registration.unregister().then((success) => {
+              if (success) {
+                console.log('Service Worker unregistered.');
+              }
+            });
+          }
+        });
+      }
+      if ('caches' in window) {
+        caches.keys().then((keys) => {
+          for (let key of keys) {
+            caches.delete(key);
+          }
         });
       }
     </script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
 
