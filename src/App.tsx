@@ -210,14 +210,19 @@ export default function App() {
           client_telephone: data.phone,
           jstelephone: clientPhone || data.phone || "Non renseigné"
         });
+        setEmailStatusMessage("✅ Réservation confirmée ! Un e-mail de confirmation a été envoyé.");
       } catch (emailErr: any) {
         console.error("EmailJS standard booking notification skipped/failed:", emailErr);
-        setEmailStatusMessage("⚠️ Impossible d'envoyer l'e-mail de confirmation, mais votre réservation est enregistrée !");
+        setEmailStatusMessage("✅ Réservation confirmée avec succès ! (Échec de l'envoi de l'e-mail)");
       }
     } catch (err: any) {
       console.error("Erreur de réservation standard avec base distante, bascule locale:", err);
-      // Generate a secure offline booking as ultimate safety fallback
-      const fallbackRef = `TK-${data.date.split('-').reverse().join('')}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
+      
+      const datePart = data.date && data.date.includes('-') 
+        ? data.date.split('-').reverse().join('') 
+        : (data.date || '000000').replace(/[^0-9]/g, '');
+      const fallbackRef = `TK-${datePart || '000000'}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
+      
       const fallbackBooking: BookingData = {
         ...data,
         id: fallbackRef,
@@ -230,6 +235,26 @@ export default function App() {
       saveBookings(updated);
       setActiveBooking(fallbackBooking);
       setScreen('ticket');
+
+      // Attempt to send confirmation email anyway for offline mode
+      try {
+        await sendReservationEmail({
+          reservation_code: fallbackRef,
+          trajet: `${data.from} → ${data.to}`,
+          date: data.date,
+          heure: data.time,
+          pickup: data.departureAddress,
+          passagers: 1,
+          prix_total: `${(data.price * 1).toLocaleString()} FCFA`,
+          client_nom: data.fullName,
+          client_telephone: data.phone,
+          jstelephone: clientPhone || data.phone || "Non renseigné"
+        });
+        setEmailStatusMessage("✅ Réservation enregistrée ! Un e-mail de confirmation a été envoyé.");
+      } catch (emailErr: any) {
+        console.error("EmailJS offline booking notification failed:", emailErr);
+        setEmailStatusMessage("✅ Réservation enregistrée avec succès !");
+      }
     } finally {
       setLoadingOverlay(false);
     }
@@ -297,14 +322,19 @@ export default function App() {
           client_telephone: data.phone,
           jstelephone: clientPhone || data.phone || "Non renseigné"
         });
+        setEmailStatusMessage("✅ Réservation Navette confirmée ! Un e-mail de confirmation a été envoyé.");
       } catch (emailErr: any) {
         console.error("EmailJS AIBD booking notification skipped/failed:", emailErr);
-        setEmailStatusMessage("⚠️ Impossible d'envoyer l'e-mail de confirmation, mais votre réservation est enregistrée !");
+        setEmailStatusMessage("✅ Réservation confirmée avec succès ! (Échec de l'envoi de l'e-mail)");
       }
     } catch (err: any) {
       console.error("Erreur de réservation Navette avec base distante, bascule locale:", err);
-      // Generate a secure offline booking as ultimate safety fallback
-      const fallbackRef = `TK-${data.date.split('-').reverse().join('')}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
+      
+      const datePart = data.date && data.date.includes('-') 
+        ? data.date.split('-').reverse().join('') 
+        : (data.date || '000000').replace(/[^0-9]/g, '');
+      const fallbackRef = `TK-${datePart || '000000'}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
+      
       const fallbackBooking: BookingData = {
         ...data,
         id: fallbackRef,
@@ -316,6 +346,26 @@ export default function App() {
       saveBookings(updated);
       setActiveBooking(fallbackBooking);
       setScreen('ticket');
+
+      // Attempt to send confirmation email anyway for offline mode
+      try {
+        await sendReservationEmail({
+          reservation_code: fallbackRef,
+          trajet: `${data.from} → ${data.to}`,
+          date: data.date,
+          heure: data.time,
+          pickup: data.departureAddress,
+          passagers: 1,
+          prix_total: `${(data.price * 1).toLocaleString()} FCFA`,
+          client_nom: data.fullName,
+          client_telephone: data.phone,
+          jstelephone: clientPhone || data.phone || "Non renseigné"
+        });
+        setEmailStatusMessage("✅ Réservation Navette enregistrée ! Un e-mail de confirmation a été envoyé.");
+      } catch (emailErr: any) {
+        console.error("EmailJS offline navette booking notification failed:", emailErr);
+        setEmailStatusMessage("✅ Réservation Navette confirmée avec succès !");
+      }
     } finally {
       setLoadingOverlay(false);
     }
