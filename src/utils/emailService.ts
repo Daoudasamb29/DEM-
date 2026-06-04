@@ -37,44 +37,61 @@ export interface EmailParams {
  * In case of error or unconfigured state: throws an error (handled gracefully by showing a discrete banner)
  */
 export async function sendReservationEmail(params: Omit<EmailParams, 'to_email'>): Promise<void> {
-  const { PUBLIC_KEY, SERVICE_ID, TEMPLATE_ID, TO_EMAIL } = EMAILJS_CONFIG;
-
-  // Check if configured (not placeholders)
-  if (
-    !PUBLIC_KEY || PUBLIC_KEY === "REMPLACER_PAR_MA_PUBLIC_KEY" ||
-    !SERVICE_ID || SERVICE_ID === "REMPLACER_PAR_SERVICE_ID" ||
-    !TEMPLATE_ID || TEMPLATE_ID === "REMPLACER_PAR_TEMPLATE_ID"
-  ) {
-    console.warn("EmailJS handles are empty or remaining at default placeholders.");
-    throw new Error("EmailJS non configuré");
-  }
-
-  // Initialize SDK
-  emailjs.init(PUBLIC_KEY);
-
-  const phoneValue = params.jstelephone || params.client_telephone || params.phone || params.telephone || "Non renseigné";
-
-  const payload: EmailParams = {
-    ...params,
-    telephone: phoneValue,
-    phone: phoneValue,
-    client_telephone: phoneValue,
-    jstelephone: phoneValue,
-    client_phone: phoneValue,
-    client_tel: phoneValue,
-    telephone_client: phoneValue,
-    phone_client: phoneValue,
-    tel: phoneValue,
-    to_email: TO_EMAIL
-  };
-
-  console.log("Sending email via EmailJS with template payload:", payload);
+  console.log("Initiating backend email submission...", params);
 
   try {
-    const response = await emailjs.send(SERVICE_ID, TEMPLATE_ID, payload as any);
-    console.log("Email sent successfully via EmailJS:", response.status, response.text);
-  } catch (error: any) {
-    console.error("Failed to send email via EmailJS:", error);
-    throw new Error(error?.text || error?.message || "Erreur d'envoi EmailJS");
+    const response = await fetch('/api/send-email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(params)
+    });
+
+    if (!response.ok) {
+      const errorJson = await response.json().catch(() => null);
+      const errorMessage = errorJson?.error || await response.text() || `Erreur serveur HTTP ${response.status}`;
+      throw new Error(errorMessage);
+    }
+
+    console.log("Email sent successfully via secure server-side proxy!");
+  } catch (err: any) {
+    console.error("Failed to route email via proxy, checking client-side sdk fallback:", err);
+
+    const { PUBLIC_KEY, SERVICE_ID, TEMPLATE_ID, TO_EMAIL } = EMAILJS_CONFIG;
+
+    // Check if client-side fallback is configured in code
+    if (
+      !PUBLIC_KEY || PUBLIC_KEY === "REMPLACER_PAR_MA_PUBLIC_KEY" ||
+      !SERVICE_ID || SERVICE_ID === "REMPLACER_PAR_SERVICE_ID" ||
+      !TEMPLATE_ID || TEMPLATE_ID === "REMPLACER_PAR_TEMPLATE_ID"
+    ) {
+      console.warn("No client-side fallback configured either.");
+      throw err;
+    }
+
+    // Attempt client-side direct EmailJS as secondary safety mechanism
+    try {
+      emailjs.init(PUBLIC_KEY);
+      const phoneValue = params.jstelephone || params.client_telephone || params.phone || params.telephone || "Non renseigné";
+      const payload: EmailParams = {
+        ...params,
+        telephone: phoneValue,
+        phone: phoneValue,
+        client_telephone: phoneValue,
+        jstelephone: phoneValue,
+        client_phone: phoneValue,
+        client_tel: phoneValue,
+        telephone_client: phoneValue,
+        phone_client: phoneValue,
+        tel: phoneValue,
+        to_email: TO_EMAIL
+      };
+      await emailjs.send(SERVICE_ID, TEMPLATE_ID, payload as any);
+      console.log("Client-side direct EmailJS fallback succeeded!");
+    } catch (fallbackErr: any) {
+      console.error("Both backend proxy and client-side fallback failed:", fallbackErr);
+      throw new Error("Impossible d'envoyer l'e-mail: " + (err?.message || "Erreur service"));
+    }
   }
 }

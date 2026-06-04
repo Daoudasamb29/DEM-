@@ -52,6 +52,65 @@ async function startServer() {
     res.json({ configured: !!isServerConfigured });
   });
 
+  // API to securely proxy EmailJS requests on the server (works on all desktop/mobile devices)
+  app.post("/api/send-email", async (req, res) => {
+    const pKey = process.env.VITE_EMAILJS_PUBLIC_KEY || process.env.EMAILJS_PUBLIC_KEY || "";
+    const sId = process.env.VITE_EMAILJS_SERVICE_ID || process.env.EMAILJS_SERVICE_ID || "";
+    const tId = process.env.VITE_EMAILJS_TEMPLATE_ID || process.env.EMAILJS_TEMPLATE_ID || "";
+    const toEmail = process.env.VITE_EMAILJS_TO_EMAIL || process.env.EMAILJS_TO_EMAIL || "";
+
+    if (!pKey || pKey.includes("REMPLACER_PAR") || !sId || sId.includes("REMPLACER_PAR") || !tId || tId.includes("REMPLACER_PAR")) {
+      console.warn("Backend EmailJS: Missing environment variables on server.");
+      return res.status(400).json({ error: "EmailJS n'est pas configuré sur le serveur. Veuillez configurer vos variables d'environnement." });
+    }
+
+    const clientParams = req.body || {};
+    const phoneValue = clientParams.jstelephone || clientParams.client_telephone || clientParams.phone || clientParams.telephone || "Non renseigné";
+
+    const payload = {
+      service_id: sId,
+      template_id: tId,
+      user_id: pKey,
+      template_params: {
+        ...clientParams,
+        telephone: phoneValue,
+        phone: phoneValue,
+        client_telephone: phoneValue,
+        jstelephone: phoneValue,
+        client_phone: phoneValue,
+        client_tel: phoneValue,
+        telephone_client: phoneValue,
+        phone_client: phoneValue,
+        tel: phoneValue,
+        to_email: toEmail
+      }
+    };
+
+    console.log("Server forwarding email to EmailJS with payload properties:", Object.keys(payload.template_params));
+
+    try {
+      const emailjsRes = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!emailjsRes.ok) {
+        const errorText = await emailjsRes.text();
+        console.error("EmailJS API response failure:", emailjsRes.status, errorText);
+        return res.status(emailjsRes.status).json({ error: errorText || "EmailJS a retourné une erreur lors de l'envoi." });
+      }
+
+      console.log("Email forwarded successfully by backend!");
+      return res.json({ success: true, status: emailjsRes.status });
+    } catch (err: any) {
+      console.error("Server exception proxying email:", err);
+      return res.status(500).json({ error: err?.message || "Erreur interne lors de l'envoi de l'e-mail." });
+    }
+  });
+
   // API to test specific credentials
   app.post("/api/supabase/test", async (req, res) => {
     const { url, key } = req.body;
