@@ -90,12 +90,12 @@ export default function HomeView({
         {/* Animated Brand Overlay UI */}
         <div 
           style={{ transform: `translateY(${Math.max(-10, -scrollTop * 0.1)}px)` }}
-          className="absolute top-6 left-6 z-10 flex flex-col gap-3.5 pointer-events-none transition-transform duration-75 ease-out"
+          className="absolute top-6 left-6 z-10 flex flex-col items-start gap-3.5 pointer-events-none transition-transform duration-75 ease-out"
         >
           {/* Brand Logo Container */}
           <div 
             style={{ transform: `scale(${logoScale})` }}
-            className="origin-top-left flex items-center gap-2 bg-black/40 backdrop-blur-md py-1.5 px-3.5 rounded-full border border-white/10 shadow-sm pointer-events-auto transition-transform duration-75 ease-out"
+            className="origin-top-left w-fit self-start flex items-center gap-2 bg-black/40 backdrop-blur-md py-1.5 px-3.5 rounded-full border border-white/10 shadow-sm pointer-events-auto transition-transform duration-75 ease-out"
           >
             <div className="w-8 h-8 rounded-full overflow-hidden border border-[#F4841C]/80 bg-white flex items-center justify-center shadow-inner">
               <img 
