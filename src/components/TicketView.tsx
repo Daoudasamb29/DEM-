@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Check, Download, Share2, Bus, ArrowRight, Plane, Home, Loader2 } from 'lucide-react';
 // @ts-ignore
 import domtoimage from 'dom-to-image-more';
@@ -11,17 +11,29 @@ import { genererImage } from '../supabase';
 interface TicketViewProps {
   booking: BookingData;
   onHome: () => void;
+  emailStatusMessage?: string | null;
 }
 
 export default function TicketView({
   booking,
-  onHome
+  onHome,
+  emailStatusMessage
 }: TicketViewProps) {
   
   const ticketRef = useRef<HTMLDivElement>(null);
   const [downloadState, setDownloadState] = useState<'idle' | 'generating' | 'downloaded'>('idle');
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+
+  // If there's an email delivery status, show Toast
+  useEffect(() => {
+    if (emailStatusMessage) {
+      const timer = setTimeout(() => {
+        triggerToast(emailStatusMessage);
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [emailStatusMessage]);
 
   // Get cities initials
   const fromAbb = getCityAbbreviation(booking.from);
@@ -45,7 +57,7 @@ export default function TicketView({
       
       const blob = await domtoimage.toBlob(ticketRef.current, {
         scale: 3,
-        bgcolor: '#ffffff'
+        bgcolor: '#EEF2FF'
       });
       
       const url = URL.createObjectURL(blob);
@@ -131,12 +143,29 @@ export default function TicketView({
       {/* CORE WORKFLOW AREA */}
       <div className="flex-1 p-5 pb-24 max-w-md mx-auto w-full flex flex-col gap-4">
         
-        {/* BOARDING PASS TICKET CARD CONTAINER */}
+        {/* PREMIUM VISUAL PRESENTATION & DOWNLOAD CONTAINER */}
         <div 
-          ref={ticketRef} 
-          id="ticket-card-rendered"
-          className="bg-white rounded-3xl shadow-md border border-indigo-100 overflow-hidden relative"
+          ref={ticketRef}
+          id="ticket-download-frame"
+          className="bg-[#EEF2FF] p-4 rounded-[32px] border border-indigo-150/40 shadow-sm flex items-center justify-center w-full relative"
         >
+          {/* Inject style tag to ensure SVG rasterizer resolves web fonts correctly inside downloaded blobs */}
+          <style dangerouslySetInnerHTML={{ __html: `
+            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+            
+            #ticket-download-frame, #ticket-card-rendered {
+              font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+            }
+            #ticket-download-frame .font-mono {
+              font-family: 'JetBrains Mono', monospace !important;
+            }
+          `}} />
+
+          {/* BOARDING PASS TICKET CARD CONTAINER */}
+          <div 
+            id="ticket-card-rendered"
+            className="bg-white rounded-3xl shadow-md border border-indigo-100 overflow-hidden relative w-full"
+          >
           {/* Ticket Header inside the card */}
           <div className="bg-[#0D1B4B] px-5 py-3 flex items-center justify-between text-white">
             <div className="flex items-center gap-2">
@@ -277,6 +306,7 @@ export default function TicketView({
             </div>
           </div>
         </div>
+      </div>
 
         {/* WORKFLOW CTAS - DOWNLOAD AND SHARE */}
         <div className="flex flex-col gap-2.5 mt-3">

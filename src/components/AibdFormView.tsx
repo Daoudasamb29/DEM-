@@ -17,18 +17,29 @@ interface AibdFormViewProps {
       ac: boolean;
     };
   }) => void;
+  defaultPhone?: string;
+  defaultFullName?: string;
+  onValueChange?: (fields: { phone?: string; fullName?: string }) => void;
 }
 
 export default function AibdFormView({
   onBack,
-  onSubmit
+  onSubmit,
+  defaultPhone = '',
+  defaultFullName = '',
+  onValueChange
 }: AibdFormViewProps) {
   
   // State variables for Airport Form
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [fullName, setFullName] = useState(defaultFullName);
+  const [phoneNumber, setPhoneNumber] = useState(() => {
+    if (defaultPhone) {
+      return defaultPhone.replace(/^\+221\s*/, '');
+    }
+    return '';
+  });
   const [departureAddress, setDepartureAddress] = useState('');
   
   // Options states (Baggage checked, AC unchecked by default)
@@ -310,6 +321,7 @@ export default function AibdFormView({
               onChange={(e) => {
                 setFullName(e.target.value);
                 if (errors.fullName) setErrors(prev => ({ ...prev, fullName: undefined }));
+                if (onValueChange) onValueChange({ fullName: e.target.value });
               }}
               className="w-full bg-transparent focus:outline-none text-slate-800 text-sm font-semibold"
             />
@@ -338,6 +350,7 @@ export default function AibdFormView({
                 const val = e.target.value.replace(/[^0-9 ]/g, '');
                 setPhoneNumber(val);
                 if (errors.phone) setErrors(prev => ({ ...prev, phone: undefined }));
+                if (onValueChange) onValueChange({ phone: val ? `+221 ${val.trim()}` : '' });
               }}
               className="w-full bg-transparent focus:outline-none text-slate-800 text-sm font-mono font-bold tracking-wide"
             />

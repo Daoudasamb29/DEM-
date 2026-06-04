@@ -36,6 +36,7 @@ interface MyTicketsViewProps {
   onSelectBooking: (booking: BookingData) => void;
   onDeleteBooking: (id: string) => void;
   onUpdateBookings: (updated: BookingData[]) => void;
+  onSearchPhone?: (phone: string) => void;
 }
 
 export default function MyTicketsView({
@@ -43,7 +44,8 @@ export default function MyTicketsView({
   onBack,
   onSelectBooking,
   onDeleteBooking,
-  onUpdateBookings
+  onUpdateBookings,
+  onSearchPhone
 }: MyTicketsViewProps) {
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [testMessage, setTestMessage] = useState<string>('');
@@ -76,6 +78,13 @@ export default function MyTicketsView({
     try {
       const results = await mesTickets(phoneSearch);
       setSearchedTickets(results);
+      if (results.length > 0 && onSearchPhone) {
+        let clean = phoneSearch.trim();
+        if (!clean.startsWith('+')) {
+          clean = `+221 ${clean}`;
+        }
+        onSearchPhone(clean);
+      }
       if (results.length === 0) {
         setSearchError("Aucune réservation trouvée pour ce numéro sur Supabase.");
       }

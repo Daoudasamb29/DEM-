@@ -17,6 +17,9 @@ interface StandardFormViewProps {
     phone: string;
     departureAddress: string;
   }) => void;
+  defaultPhone?: string;
+  defaultFullName?: string;
+  onValueChange?: (fields: { phone?: string; fullName?: string }) => void;
 }
 
 export default function StandardFormView({
@@ -24,14 +27,22 @@ export default function StandardFormView({
   to,
   price,
   onBack,
-  onSubmit
+  onSubmit,
+  defaultPhone = '',
+  defaultFullName = '',
+  onValueChange
 }: StandardFormViewProps) {
   
   // State declaration
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [fullName, setFullName] = useState(defaultFullName);
+  const [phoneNumber, setPhoneNumber] = useState(() => {
+    if (defaultPhone) {
+      return defaultPhone.replace(/^\+221\s*/, '');
+    }
+    return '';
+  });
   const [departureAddress, setDepartureAddress] = useState('');
   const [availableHours, setAvailableHours] = useState<string[]>([]);
   const [loadingHours, setLoadingHours] = useState(false);
@@ -323,6 +334,7 @@ export default function StandardFormView({
               onChange={(e) => {
                 setFullName(e.target.value);
                 if (errors.fullName) setErrors(prev => ({ ...prev, fullName: undefined }));
+                if (onValueChange) onValueChange({ fullName: e.target.value });
               }}
               className="w-full bg-transparent focus:outline-none text-slate-800 text-sm font-semibold"
             />
@@ -352,6 +364,7 @@ export default function StandardFormView({
                 const val = e.target.value.replace(/[^0-9 ]/g, '');
                 setPhoneNumber(val);
                 if (errors.phone) setErrors(prev => ({ ...prev, phone: undefined }));
+                if (onValueChange) onValueChange({ phone: val ? `+221 ${val.trim()}` : '' });
               }}
               className="w-full bg-transparent focus:outline-none text-slate-800 text-sm font-mono font-bold tracking-wide"
             />
